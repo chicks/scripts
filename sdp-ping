@@ -1,0 +1,193 @@
+#! /usr/bin/perl
+
+use strict;
+use IO::Socket;
+use Time::HiRes qw(gettimeofday tv_interval);
+use Getopt::Long;
+
+# globals
+use vars qw($DEBUG $ERROR $ERRNO $LOGFILE);
+
+# arguments
+my $help;
+my $sdp         = '';
+my $msisdn      = '';
+my $timeout     = '10';
+my $count       = '1';
+
+die usage() if (($#ARGV < 2 ) or ( ! GetOptions ( 'help|?'          => \$help,
+                                                  'd|sdp=s'         => \$sdp,
+                                                  'm|msisdn=i'      => \$msisdn,  
+                                                  't|timeout=i'     => \$timeout,
+                                                  'c|count=i'       => \$count
+                                               )) or ( defined $help ));
+
+sub usage {
+
+  print "Unknown option: @_\n" if ( @_ );
+  print STDERR << "EOF";
+
+  Usage: 
+    $0 [OPTIONS]... [-d, --sdp <ip address>] [-m, --msisdn <msisdn>]
+
+  Valid options are:
+       [-?, --help]
+       [-t, --timeout <secs>]
+       [-c, --count <counts>] 
+
+EOF
+  exit;
+}
+
+sub get_rpc_port {
+
+  # Socket Parameters
+  my ($dst_ip, $dst_port, $iaddr, $paddr, $proto, $timeout);
+
+  # Timestamps
+  my ($start_req, $end_req);
+
+  # RPC Parameters
+  my $rpc_xid           = 0x43a43b44;
+  my $rpc_msg_type      = 0x00000000;
+  my $rpc_vers          = 0x00000002;
+  my $rpc_prog          = 0x000186A0;
+  my $rpc_prog_vers     = 0x00000002;
+  my $rpc_prog_proc     = 0x00000003;
+  my $rpc_cred_flav     = 0x00000000;
+  my $rpc_cred_len      = 0x00000000;
+  my $rpc_verf_flav     = 0x00000000;
+  my $rpc_verf_len      = 0x00000000;
+  my $rpc_new_prog      = 0x20000200;
+  my $rpc_new_prog_ver  = 0x00000001;
+  my $rpc_new_prog_prot = 0x00000006;
+  my $rpc_new_prog_port = 0x00000000;
+  
+  my $request = pack('N*', $rpc_xid, $rpc_msg_type, $rpc_vers, $rpc_prog, $rpc_prog_vers, $rpc_prog_proc, $rpc_cred_flav, $rpc_cred_len, $rpc_verf_flav, $rpc_verf_len, $rpc_new_prog, $rpc_new_prog_ver, $rpc_new_prog_prot, $rpc_new_prog_port);
+  my $response;  
+
+  my $response_len;
+
+  # Arguments
+  $dst_ip   = shift;
+  $dst_port = 111;
+  $timeout  = shift;
+
+  # Build a socket
+  my $remote = IO::Socket::INET -> new( Proto => "udp", 
+                                     PeerAddr => $dst_ip,
+                                     PeerPort => $dst_port,
+                                     Timeout => $timeout,
+                                     Blocking => 0 )
+  or die "Can't connect to \"$dst_ip\"\n";
+
+  $start_req = [gettimeofday];
+  $remote->send($request) || die "send: $!";
+
+  print "Sent PortMap Request to $dst_ip\n";
+  
+  my ($rin, $rout, $eout) ="";
+  vec($rin, fileno($remote), 1) = 1;
+  select($rout=$rin, undef, $eout=$rin, $timeout) or die "select: $!";
+
+  $remote->recv($response, 28) or die "recv: $!";
+    
+  print "Response of Length " . length($response)  . ": " . unpack('H*', $response) . "\n";  
+
+  $end_req = [gettimeofday];
+
+  my $elapsed_req_ms = (tv_interval $start_req, $end_req) * 1000 ;
+  #print "RPC/Portmap Request took: $elapsed_req_ms ms\n";
+  # port is the last 4 bytes
+  my $sdp_port_accept = unpack('N', substr($response, 8, 4));
+  my $sdp_port = unpack('N', substr($response, -4));
+  
+  #print "SDP Port: $sdp_port\n";
+  #print "Status: $sdp_port_accept\n";
+
+  if ($sdp_port_accept == 0 && $sdp_port != 0) {
+    return $sdp_port;
+  } else {
+    die "PortMap->GetPort failed for: $dst_ip\n";
+  }
+}
+
+sub get_balance {
+  # Socket Parameters
+  my ($dst_ip, $dst_port, $timeout);
+
+  # Timestamps
+  my ($start_req, $end_req);
+
+  # Request Parameters
+  my ($msisdn);
+
+  # RPC Parameters for an SDP Request
+  my $rpc_xid           = 0x43a43b44;
+  my $rpc_msg_type      = 0x00000000;
+  my $rpc_vers          = 0x00000002;
+  my $rpc_prog          = 0x20000200;
+  my $rpc_prog_vers     = 0x00000002;
+  my $rpc_prog_proc     = 0x00000001;
+  my $rpc_cred_flav     = 0x00000000;
+  my $rpc_cred_len      = 0x00000000;
+  my $rpc_verf_flav     = 0x00000000;
+  my $rpc_verf_len      = 0x00000000;
+
+  my $sdp_get_bal_arg1  = pack('N*', 0x00000004, 0x494e4150, 0x00000001);   # 4 byte XDR string = INAP + delimiter
+  my $sdp_get_bal_arg2  = pack('N*', 0x0000000c, 0x5343503d, 0x41584531, 0x34353030, 0x00000001); # 12 byte XDR string = SCP=AXE1 4500 + delimiter
+  my $sdp_get_bal_arg3  = pack('N*', 0x00000016, 0x43555354, 0x5f54454c, 0x5f4e4f3d, 0x39313937, 0x30323437, 0x37370000, 0x00000001); # 22 byte XDR String = MSISDN + Delimiter
+  my $sdp_get_bal_arg4  = pack('N*', 0x0000001a, 0x6f706572, 0x6174696f, 0x6e3d4745, 0x545f414c, 0x4c5f4241, 0x4c414e43, 0x45530000, 0x00000001); 
+  my $sdp_get_bal_arg5  = pack('N*', 0x00000008, 0x52455452, 0x49455645, 0x00000000);
+  
+  #my $request = pack('N*', 0x43a43b44, 0x85cf16c3, 0x00000000, 0x00000002, 0x20000200, 0x00000001, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000004, 0x494e4150, 0x00000001, 0x0000000c, 0x5343503d, 0x41584531, 0x34353030, 0x00000001, 0x00000016, 0x43555354, 0x5f54454c, 0x5f4e4f3d, 0x39313937, 0x30323437, 0x37370000, 0x00000001, 0x0000001a, 0x6f706572, 0x6174696f, 0x6e3d4745, 0x545f414c, 0x4c5f4241, 0x4c414e43, 0x45530000, 0x00000001, 0x00000008, 0x52455452, 0x49455645, 0x00000000);
+  my $request = pack('N*', 0x800000a0, 0xc8a3fa32, 0x00000000, 0x00000002, 0x20000200, 0x00000001, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000004, 0x494e4150, 0x00000001, 0x0000000c, 0x5343503d, 0x41584531, 0x34353030, 0x00000001, 0x00000016, 0x43555354, 0x5f54454c, 0x5f4e4f3d, 0x39303136, 0x35313733, 0x36300000, 0x00000001, 0x0000001a, 0x6f706572, 0x6174696f, 0x6e3d4745, 0x545f414c, 0x4c5f4241, 0x4c414e43, 0x45530000, 0x00000001, 0x00000008, 0x52455452, 0x49455645, 0x00000000);
+  my $response;  
+
+  # Arguments
+  $dst_ip = shift;
+  $dst_port = shift;
+  $timeout = shift;
+  $msisdn = shift;
+  
+  # Build a socket
+  my $remote = IO::Socket::INET -> new( Proto => "tcp",
+                                     PeerAddr => $dst_ip,
+                                     PeerPort => $dst_port,
+                                     Timeout => $timeout,
+                                     Blocking => 0 )
+  or die "Can't connect to \"$dst_ip\"\n";
+
+  $start_req = [gettimeofday];
+  $remote->send($request) || die "send: $!";
+
+  print "Sent Get_Balance Request to $dst_ip:$dst_port\n";
+  #print "Sent bytes to $dst_ip\n";
+
+  my ($rin, $rout, $eout) ="";
+  vec($rin, fileno($remote), 1) = 1;
+  select($rout=$rin, undef, $eout=$rin, $timeout) or die "select: $!";
+  $remote->recv($response, 1000); #or die "recv: $!";
+
+  print "Response of Length " . length($response)  . ": " . unpack('H*', $response) . "\n";  
+
+  $end_req = [gettimeofday];
+
+  my $elapsed_req_ms = (tv_interval $start_req, $end_req) * 1000 ;
+  print "RPC/GetBalance Request took: $elapsed_req_ms ms\n";  # port is the last 4 bytes
+  #my $sdp_port_accept = unpack('N', substr($response, 8, 4));
+  #my $sdp_port = unpack('N', substr($response, -4));
+
+  #print "SDP Port: $sdp_port\n";
+  #print "Status: $sdp_port_accept\n";
+
+  #if ($sdp_port_accept == 0 && $sdp_port != 0) {
+  #  return $sdp_port;
+  #} else {
+  #  die "RPC/Get_Balance failed for: $dst_ip\n";
+  #}
+
+}
+
+my $tcp_rpc_port = get_rpc_port($sdp, $timeout);
+my $bal = get_balance($sdp, $tcp_rpc_port, $timeout, $msisdn);

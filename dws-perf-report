@@ -1,0 +1,136 @@
+#! /usr/bin/perl
+
+use strict;
+use Net::SMTP;
+use Getopt::Long;
+use IO::File;
+use Data::Dumper;
+
+# Globals
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
+my $current_hour = sprintf("%4d-%02d-%02dT%02d",$year+1900,$mon+1,$mday,$hour-1);
+my $current_hour_readable = sprintf("%4d-%02d-%02d %02d:00-%02d:00",$year+1900,$mon+1,$mday,$hour-1,$hour);
+my $timestamp = sprintf("%4d-%02d-%02dT%02d:%02d:%02d",$year+1900,$mon+1,$mday,$hour,$min,$sec);
+my $LOGFILE;
+my $result = {};
+my @results =[];
+
+# Arguments
+my $help;
+my $send_mail;
+my $input_file = "/home/qchahic/dws-mon/measurements/" . "dws-" . $current_hour . ".00.00.log";
+
+die usage() if ( ! GetOptions (
+                      'help|?'          => \$help,
+                      'm|sendmail'      => \$send_mail, 
+                      'f|file=s'        => \$input_file, ))
+  or ( defined $help );
+
+sub usage {
+  print "Unknown option: @_\n" if ( @_ );
+  print STDERR << "EOF";
+
+  Usage:
+    $0 [OPTIONS]...
+
+  Valid options are:
+       [-?, --help]                         display usage information
+       [-m, --sendmail]                     send the results in email
+       [-f, --file <path to file>]          use the following file as input
+
+EOF
+  exit;
+}
+
+$LOGFILE = IO::File->new("$input_file") or die "Couldn't open logfile: $!\n";
+
+foreach my $line (<$LOGFILE>) {
+  my @elems = split(/\|/, $line);
+  my $tstamp = substr($elems[0], -8);
+  my $ahr_lag = round($elems[1]);
+  my $cshr_lag = round($elems[2]);
+  $result->{'totalchecks'}++;
+  $result->{'totalahr'} += $ahr_lag ;
+  $result->{'totalcshr'}+= $cshr_lag;
+  $result->{'checks'}{$tstamp}{'ahr'} = $ahr_lag;
+  $result->{'checks'}{$tstamp}{'cshr'} = $cshr_lag;
+}
+close $LOGFILE;
+
+my $ahr_high    = 0; 
+my $ahr_low     = 100000;
+my $ahr_avg     = 0;
+my $ahr_total   = 0;
+my $ahr_sum     = 0;
+
+my $cshr_high   = 0;
+my $cshr_low    = 100000;
+my $cshr_avg    = 0;
+my $cshr_sum    = 0;
+
+my $total  = 0;
+
+my $results = <<EOF;
+DWS API Response Times for $current_hour_readable. 
+
+NOTES:
+  1. All times are in milliseconds.  
+  2. Anything above 30,000 should be investigated.
+  3. For changes to this report, contact carl.hicks\@ericsson.com
+
+EOF
+$results .= sprintf("%8s %10s %10s %10s\n", "Number", "Time", "AHR", "CSHR");
+
+for my $tstamp ( sort keys %{$result->{'checks'}} ) {
+  my $cshr = 0;
+  my $ahr = 0;
+  $total++;
+  for my $check ( sort keys %{$result->{'checks'}->{$tstamp}} ) {
+    if ($check =~ /ahr/) {
+      $ahr = $result->{'checks'}->{$tstamp}->{'ahr'};
+      $ahr_sum += $ahr;
+      $ahr_avg = $ahr_sum / $total;
+      $ahr_low = $ahr if $ahr < $ahr_low;
+      $ahr_high = $ahr if $ahr > $ahr_high;
+    }
+    if ($check =~ /cshr/) {
+      $cshr = $result->{'checks'}->{$tstamp}->{'cshr'};
+      $cshr_sum += $cshr;
+      $cshr_avg = $cshr_sum / $total;
+      $cshr_low = $cshr if $cshr < $cshr_low;
+      $cshr_high = $cshr if $cshr > $cshr_high;
+    }
+    #print "$ahr_total\t$tstamp\t$ahr\t$cshr\n";
+  }
+  $results .= sprintf("%8s %10s %10s %10s\n", $total,$tstamp,$ahr,$cshr);
+}
+$results .= sprintf("%8s %10s %10s %10s\n", "", "Low:", $ahr_low, $cshr_low);
+$results .= sprintf("%8s %10s %10s %10s\n", "", "High:", $ahr_high, $cshr_high);
+$results .= sprintf("%8s %10s %10s %10s\n", "", "Avg:", round($ahr_avg), round($cshr_avg));
+
+
+if (defined $send_mail) {
+  my $smtp = Net::SMTP->new('129.192.129.27', Timeout => 60);
+  $smtp->mail($ENV{USER});
+  $smtp->to('siquan.xx.zhu@ericsson.com','carl.hicks@ericsson.com','phillip.hardin@ericsson.com','mylesa.m.mylvaganam@ericsson.com', 'per.treven@ericsson.com');
+  $smtp->bcc('olufemi.adebiyi@ericsson.com');
+  $smtp->data();
+  $smtp->datasend("To: carl.hicks\@ericsson.com\n");
+  $smtp->datasend("From: carl.hicks\@ericsson.com\n");
+  $smtp->datasend("Subject: DWS 4.0 API Response Times for $current_hour_readable");
+  $smtp->datasend("\n");
+  $smtp->datasend($results);
+  $smtp->datasend("\n");
+  $smtp->dataend();
+  $smtp->quit;
+} else {
+  print $results;
+}
+
+#print Dumper($result);
+
+sub round {
+    my($number) = shift;
+    return int($number + .5);
+}
+

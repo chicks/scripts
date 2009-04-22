@@ -1,0 +1,141 @@
+#! /usr/bin/perl -w
+
+use strict;
+use IO::Socket;
+use Getopt::Long;
+use Time::HiRes qw(gettimeofday tv_interval);
+
+# Arguments
+my $help;
+my $debug;
+my $long_output;
+my $dst_ip      = '129.192.131.233'; 
+my $dst_port    = '80';
+my $timeout     = '30'; 
+my $msisdn      = '7699269004'; 
+my $days_back   = '10'; 
+
+# Globals
+my $remote;
+my $request;
+my $response;
+my $start_req;
+my $elapsed_req_ms;
+my $end_req;
+my $results = {};
+my $cookie;
+my $path;
+my $http_version = '1.1';
+my $start_date;
+my $end_date = get_date();
+
+#die usage() if (($#ARGV < 1 ) 
+die usage() if ( ! GetOptions ( 
+                      'help|?'          => \$help,
+                      'd|debug'         => \$debug,
+                      'h|host=s'        => \$dst_ip,
+                      'p|port=i'        => \$dst_port,
+                      't|timeout=i'     => \$timeout, 
+                      'm|msisdn=i'      => \$msisdn, 
+                      'b|daysback=i'    => \$days_back, 
+                      'l|long'          => \$long_output, ))
+  or ( defined $help );
+
+sub usage {
+  print "Unknown option: @_\n" if ( @_ );
+  print STDERR << "EOF";
+
+  Usage:
+    $0 [OPTIONS]... 
+
+  Valid options are:
+       [-?, --help]       display usage information
+       [-d, --debug]      display debugging information
+       [-h, --host]       set the remote host
+       [-p, --port]       set the remote port
+       [-t, --timeout]    set the connection timeout
+       [-m, --msisdn]     set the msisdn to query
+       [-b, --daysback]   set the number of days back to query
+       [-l, --long]       display parsed response
+
+EOF
+  exit;
+}
+
+sub get_date {
+  my $days_from_now = $_[0] || 0;
+  my $secs_from_now = $days_from_now * 86400;
+  my $secs_from_epoch = time - $secs_from_now;
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime($secs_from_epoch);
+  my $date = sprintf("%4d-%02d-%02d",$year+1900,$mon+1,$mday);
+  print "get_date($_[0]): $date\n" if (defined $debug);
+  return $date;
+}
+
+# Start Timestamp
+$start_req = [gettimeofday];
+
+#build our start date
+$start_date = get_date($days_back);
+
+# Build a socket
+$remote = IO::Socket::INET->new( Proto     => 'tcp',
+                                 PeerAddr  => $dst_ip,
+                                 PeerPort  => $dst_port,
+                                 Timeout   => $timeout,
+                                 Blocking  => 0 )
+or die "Can't connect to $dst_ip\:$dst_port\n";
+
+$request = <<EOF;
+GET /dws_web/reports/cshr_output.pub?INP_MSISDN_NUMBER=$msisdn&INP_DATE_RANGE_FROM=$start_date&INP_DATE_RANGE_TO=$end_date&INP_NUM_OF_REC=5&INP_OUTPUT_TYPE=API HTTP/$http_version
+User-Agent: Healtcheck
+Host: $dst_ip:$dst_port
+
+EOF
+
+print "Sending: $request\n" unless ! defined $debug;
+
+# Send request, and read the response
+$remote->send($request) || die "send: $!";
+my ($rin, $rout, $eout) ="";
+vec($rin, fileno($remote), 1) = 1;
+select($rout=$rin, undef, $eout=$rin, $timeout) or die "select: $!";
+while(<$remote>) {
+  $response .= $_;
+}
+print "Received: $response\n" unless ! defined $debug;
+if ($response =~ /Set-Cookie:\s+(.*\;)\s+Path\=(.*)/) {
+  $cookie = $1;  
+  $path = $2;
+  
+  # remove the trailing newline in the previous request, and append the cookie an newline
+  chomp $request;
+  chomp $cookie;
+  chomp $path;
+  $request .= "Cookie: \$Version=0; $cookie \$Path=$path\n";
+  $request .= "Connection: Close\n";
+  $request .= "\n";
+
+  print "Sending: $request\n" unless ! defined $debug;
+  $remote->send($request) || die "send: $!"; 
+  select($rout=$rin, undef, $eout=$rin, $timeout) or die "select: $!";
+  while(<$remote>) {
+    $response .= $_;
+  }
+}
+$remote->close;
+
+# End Timestamp
+$end_req = [gettimeofday];
+
+# calculate the elapsed time
+$elapsed_req_ms = (tv_interval $start_req, $end_req) * 1000;
+
+# Determine if we succeeded or not
+if ($response =~ /HTTP\/1\.1\ 200/ && defined $cookie) {
+  print "Received: $response\n" if ( defined $debug ||  defined $long_output);
+  print "CSHR Latency: $elapsed_req_ms ms\n";
+} else {
+  print "Bad Response: $response\n";
+}
+

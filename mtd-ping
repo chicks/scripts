@@ -1,0 +1,95 @@
+#! /usr/bin/perl 
+
+use strict;
+use IO::Socket;
+use Getopt::Long;
+use Time::HiRes qw(gettimeofday tv_interval);
+
+# Arguments
+my $help;
+my $long_output;
+my $dst_ip   = '10.100.31.134'; 
+my $dst_port = '8088';
+my $timeout  = '30'; 
+
+# Globals
+my $remote;
+my $request;
+my $response;
+my $start_req;
+my $elapsed_req_ms;
+my $end_req;
+my $results = {};
+
+#die usage() if (($#ARGV < 1 ) 
+die usage() if ( ! GetOptions ( 
+                      'help|?'          => \$help,
+                      'h|host=s'        => \$dst_ip,
+                      'p|port=i'        => \$dst_port,
+                      't|timeout=i'     => \$timeout, 
+                      'l|long'          => \$long_output, ))
+  or ( defined $help );
+
+sub usage {
+  print "Unknown option: @_\n" if ( @_ );
+  print STDERR << "EOF";
+
+  Usage:
+    $0 [OPTIONS]... 
+
+  Valid options are:
+       [-?, --help]     display usage information
+       [-h, --host]     set the remote host
+       [-p, --port]     set the remote port
+       [-t, --timeout]  set the connection timeout
+       [-l, --long]     display parsed response
+
+EOF
+  exit;
+}
+
+# Start Timestamp
+my $start_req = [gettimeofday];
+
+# Build a socket
+$remote = IO::Socket::INET->new( Proto     => 'tcp',
+                                 PeerAddr  => $dst_ip,
+                                 PeerPort  => $dst_port,
+                                 Timeout   => $timeout,
+                                 Blocking  => 0 )
+or die "Can't connect to $dst_ip\:$dst_port\n";
+
+$request = <<EOF;
+GET /cnni/process.do?topic=defaultweather&category=weathercountry&category2=weathercity&category3=weatheritem&action=access&assetId=A-2001&locator=MC HTTP/1.0
+User-Agent: MTD-Healthcheck
+
+EOF
+
+# Send request, and read the response
+$remote->send($request) || die "send: $!";
+my ($rin, $rout, $eout) ="";
+vec($rin, fileno($remote), 1) = 1;
+select($rout=$rin, undef, $eout=$rin, $timeout) or die "select: $!";
+while(<$remote>) {
+  $response .= $_;
+}
+$remote->close;
+
+# End Timestamp
+$end_req = [gettimeofday];
+
+# calculate the elapsed time
+$elapsed_req_ms = (tv_interval $start_req, $end_req) * 1000;
+
+# Determine if we succeeded or not
+if ($response =~ /HTTP\/1\.1\ 200/) {
+  #my $city = $1 if ($response =~ /\<CityCode\ code\=\"\d+\"\ name=\"(\w+)\"/);
+  #my $min_temp = $1 if ($response =~ /TemperatureMin\=\"(\d{1,3})\"/);
+  #my $max_temp = $1 if ($response =~ /TemperatureMax\=\"(\d{1,3})\"/);
+  #if (defined $long_output) { print "$city: $min_temp to $max_temp C\n" };
+  if (defined $long_output) { print "$response\n"};
+  print "MTD Latency: $elapsed_req_ms ms\n";
+} else {
+  print "Bad Response: $response\n";
+}
+

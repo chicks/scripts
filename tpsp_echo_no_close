@@ -1,0 +1,237 @@
+#! /usr/bin/perl
+
+use strict;
+use Socket;
+
+# globals
+use vars qw($DEBUG $ERROR $ERRNO $LOGFILE);
+
+#package tpsp;
+
+sub usage {
+
+  print STDERR << "EOF";
+
+  usage: $0 ip port [ timeout ]
+
+    example: $0 -d 127.0.0.1 8080 5
+
+EOF
+  exit;
+  
+}
+
+sub connect_to {
+
+  # Socket Parameters
+  my ($dst_ip, $dst_port, $iaddr, $paddr, $proto, $timeout);
+
+  # HTTP objects
+  my ($request, $response, $http_status);  
+
+  # Arguments
+  $dst_ip   = shift;
+  $dst_port = shift;
+  $request  = shift;
+  $timeout  = shift;
+
+  # Determine the port
+  if ($dst_port =~ /\D/) { $dst_port = getservbyname($dst_port, 'tcp') }
+  die "No port" unless $dst_port;
+
+  # Build a socket
+  $iaddr   = inet_aton($dst_ip)           || die "no host: $dst_ip";
+  $paddr   = sockaddr_in($dst_port, $iaddr);
+  $proto   = getprotobyname('tcp');
+  socket(SOCK, PF_INET, SOCK_STREAM, $proto)      || die "socket: $!";
+
+  # Set a valid send/receive timeout
+  setsockopt(SOCK, SOL_SOCKET, SO_SNDTIMEO, pack('LL', $timeout, 0) ) or die "setsockopt: $!";
+  setsockopt(SOCK, SOL_SOCKET, SO_RCVTIMEO, pack('LL', $timeout, 0) ) or die "setsockopt: $!";
+  my $tcp_swind = unpack('L', getsockopt(SOCK, SOL_SOCKET, SO_SNDBUF)) or die "getsockopt: $!";
+  my $tcp_rwind = unpack('L', getsockopt(SOCK, SOL_SOCKET, SO_RCVBUF)) or die "getsockopt: $!";
+  print "SO_SNDBUF = $tcp_swind bytes\nSO_RCVBUF = $tcp_rwind bytes\n";
+  
+  # measure elapsed time
+  connect(SOCK, $paddr)    || die "down\n";
+
+  # send a test request
+  send(SOCK,$request,0) || die "down\n";
+
+  while(<SOCK>) {
+    if ($_ =~ /HTTP\/1\.1\ (\d{3})\ (\w+)/) {
+      $http_status = $1;
+      chomp($http_status);
+    } 
+    $response .= $_; 
+  }
+  
+  close (SOCK) || die "down\n";
+
+  return $http_status;
+
+}
+
+sub build_tpsp_echo_request {
+
+  my $dst_ip = shift;
+  my $dst_port = shift;
+
+  # Build the header and the body
+  my $request_body = <<EOF;
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tpspagw="http://www.ericsson.com/pps/tpspagw/1.0">
+<SOAP-ENV:Header>
+<tpspagw:RequestHeader><tpspagw:tpspversion>01.00.00</tpspagw:tpspversion>
+<tpspagw:Transaction>TPE100</tpspagw:Transaction>
+<tpspagw:Userid>TEST_CSO</tpspagw:Userid>
+<tpspagw:Password>NEWPASS123</tpspagw:Password>
+<tpspagw:actor>EBS</tpspagw:actor>
+</tpspagw:RequestHeader>
+</SOAP-ENV:Header>
+<SOAP-ENV:Body>
+<tpspagw:TPSPEchoReq><tpspagw:data>Testing the TPSP Echo message</tpspagw:data></tpspagw:TPSPEchoReq>
+</SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+EOF
+
+  # trim the trailing newline, because it throws off the length calculation
+  chomp $request_body;
+
+  # calculate length of the request body
+  my $request_length = length $request_body;
+
+  # build the header
+  my $request_header = 'POST /agw/EbiService HTTP/1.1' . "\n";
+  $request_header = $request_header . 'Accept: application/soap+xml, application/dime, multipart/related, text/*' . "\n";
+  $request_header = $request_header . 'Cache-Control: no-cache' . "\n";
+  $request_header = $request_header . 'Pragma: no-cache' . "\n";
+  $request_header = $request_header . 'Content-Type: text/xml; charset=utf-8' . "\n";
+  $request_header = $request_header . 'User-Agent: Charles-HttpClient/3.0.1' . "\n";
+  $request_header = $request_header . 'Host: ' . "$dst_ip:$dst_port" . "\n";
+  #$request_header = $request_header . 'Connection: close' . "\n";
+  $request_header = $request_header . 'Content-Length: ' . $request_length . "\n\n";
+
+  # put the header and the body together.
+  return $request_header . $request_body;
+}
+
+sub write_debug_log {
+  
+  # Additional Debugging
+
+  if ($DEBUG == 1) {
+
+    # Open the output file
+    open( OUTF, ">>$LOGFILE" ) || die "Couldn't open $LOGFILE: $!";
+
+    # Print the command line args
+    print OUTF "---- Command Line Args ----\n";
+    my $arg;
+    foreach $arg ( @ARGV ) {
+       print OUTF $arg, "\n";
+    }
+    # Print the environment
+    if (defined %ENV) {
+      my $key;
+      print OUTF "---- Environment Args ----\n";
+      foreach $key (sort keys %ENV) {
+         printf OUTF "$key = $ENV{$key}\n"
+      }
+    }
+    print OUTF "---- End Args ----\n";
+    close( OUTF );
+  }
+}
+
+
+sub ip_is_ipv4 {
+    my $ip = shift;
+
+    # Check for invalid chars
+    unless ($ip =~ m/^[\d\.]+$/) {
+        $ERROR = "Invalid chars in IP $ip";
+        $ERRNO = 107;
+        return 0;
+    }
+
+    if ($ip =~ m/^\./) {
+        $ERROR = "Invalid IP $ip - starts with a dot";
+        $ERRNO = 103;
+        return 0;
+    }
+
+    if ($ip =~ m/\.$/) {
+        $ERROR = "Invalid IP $ip - ends with a dot";
+        $ERRNO = 104;
+        return 0;
+    }
+
+    # Single Numbers are considered to be IPv4
+    if ($ip =~ m/^(\d+)$/ and $1 < 256) { return 1 }
+
+    # Count quads
+    my $n = ($ip =~ tr/\./\./);
+
+    # IPv4 must have from 1 to 4 quads
+    unless ($n >= 0 and $n < 4) {
+        $ERROR = "Invalid IP address $ip";
+        $ERRNO = 105;
+        return 0;
+    }
+
+    # Check for empty quads
+    if ($ip =~ m/\.\./) {
+        $ERROR = "Empty quad in IP address $ip";
+        $ERRNO = 106;
+        return 0;
+    }
+
+    foreach (split /\./, $ip) {
+
+        # Check for invalid quads
+        unless ($_ >= 0 and $_ < 256) {
+            $ERROR = "Invalid quad in IP address $ip - $_";
+            $ERRNO = 107;
+            return 0;
+        }
+    }
+    return 1;
+}
+
+sub ip_get_embedded_ipv4 {
+    my $ipv6 = shift;
+
+    my @ip = split /:/, $ipv6;
+
+    # Bugfix by Norbert Koch
+    return unless (@ip);
+
+    # last octet should be ipv4
+    return ($ip[-1]) if (ip_is_ipv4($ip[-1]));
+
+    return;
+}
+
+$DEBUG = 0;
+$LOGFILE = "arg_tpsp_out";
+write_debug_log();
+
+my $dst_ip = shift || $ENV{"NODE_IP"} || die usage();
+my $dst_port = shift || $ENV{"NODE_PORT"} || die usage();
+my $timeout = shift || 10;
+
+# Some F5's like to use ipv6...  Convert to ipv4 if neccessary
+if (ip_get_embedded_ipv4($dst_ip)) {
+  $dst_ip = ip_get_embedded_ipv4($dst_ip);
+}
+
+my $request = build_tpsp_echo_request($dst_ip, $dst_port);
+
+# Send the request, look at the http status
+my $http_status = connect_to($dst_ip, $dst_port, $request, $timeout);
+
+if ($http_status =~ /200/) {
+  print "up\n";
+} else {
+  print "down\n";
+}

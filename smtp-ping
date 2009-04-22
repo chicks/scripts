@@ -1,0 +1,52 @@
+#! /usr/bin/perl 
+
+use strict;
+use IO::Socket;
+use Time::HiRes qw(gettimeofday tv_interval);
+
+# Arguments
+my $dst_ip   = shift || '129.192.129.27';
+my $dst_port = '25';
+my $timeout  = '10';
+
+# Build a socket
+my $remote = IO::Socket::INET->new( Proto     => 'tcp',
+                                    PeerAddr  => $dst_ip,
+                                    PeerPort  => $dst_port,
+                                    Timeout   => $timeout,
+                                    Blocking  => 0 )
+or die "Can't connect to \"$dst_ip\"\n";
+
+
+my $request = "EHLO foo.com\n";
+my $response = "";
+
+# Start Timestamp
+my $start_req = [gettimeofday];
+
+# Send request, and read the response
+$remote->send($request) || die "send: $!";
+my ($rin, $rout, $eout) ="";
+vec($rin, fileno($remote), 1) = 1;
+select($rout=$rin, undef, $eout=$rin, $timeout) or die "select: $!";
+$remote->recv($response, 3); #or die "recv: $!";
+
+$remote->close;
+
+# End Timestamp
+my $end_req = [gettimeofday];
+
+my $elapsed_req_ms = (tv_interval $start_req, $end_req) * 1000;
+
+if ($response =~ /220/) {
+  print "SMTP Latency: $elapsed_req_ms ms\n";
+} else {
+  print "Bad Response: $response\n";
+}
+
+#print "Response of Length " . length($response)  . ": \n" . $response . "\n";
+
+
+
+
+

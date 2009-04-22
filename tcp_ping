@@ -1,0 +1,66 @@
+#! /usr/bin/perl -w
+use strict;
+use Socket;
+use Time::HiRes qw(gettimeofday tv_interval);
+
+sub usage {
+
+  print STDERR << "EOF";
+
+  usage: $0 ip port [ count timeout ]
+
+    example: $0 127.0.0.1 8080 5 5
+
+EOF
+  exit;
+
+}
+
+
+sub connect_to {
+
+       # Socket Parameters
+       my ($dst_ip, $dst_port, $iaddr, $paddr, $proto, $line, $timeout);
+
+       # Socket Measurements
+       my ($start_connect, $end_connect, $elapsed_connect_ms);
+
+       $dst_ip    = shift;
+       $dst_port  = shift;
+       $timeout   = shift;
+    
+       if ($dst_port =~ /\D/) { $dst_port = getservbyname($dst_port, 'tcp') }
+       die "No port" unless $dst_port;
+       $iaddr   = inet_aton($dst_ip)           || die "no host: $dst_ip";
+       $paddr   = sockaddr_in($dst_port, $iaddr);
+       $proto   = getprotobyname('tcp');
+       socket(SOCK, PF_INET, SOCK_STREAM, $proto)      || die "socket: $!";
+
+       # Set a reasonable timeout
+       setsockopt(SOCK, SOL_SOCKET, SO_SNDTIMEO, pack('LL', $timeout, 0) ) or die "setsockopt: $!";
+       setsockopt(SOCK, SOL_SOCKET, SO_RCVTIMEO, pack('LL', $timeout, 0) ) or die "setsockopt: $!";
+
+       # measure elapsed time
+       $start_connect = [gettimeofday];
+       connect(SOCK, $paddr)    || die "connect: $!";
+       $end_connect = [gettimeofday];
+
+       return $elapsed_connect_ms = (tv_interval $start_connect, $end_connect) * 1000;
+
+       close (SOCK) || die "close: $!";
+}
+
+my $dst_ip = shift || die usage();
+my $dst_port = shift || die usage();
+my $count = shift || 10;
+my $timeout = shift || 10;
+my $elapsed_connect_ms;
+my $current_count = 0;
+
+while ( $count > $current_count ) {
+  $elapsed_connect_ms = connect_to($dst_ip, $dst_port, $timeout);
+  print "connected to $dst_ip:$dst_port seq=$current_count time=$elapsed_connect_ms ms\n";
+  $current_count++;
+  sleep 1;
+}
+                                                                                                                                          
