@@ -63,6 +63,7 @@ Owner: default=SP A, current=SP A       Array failover mode: 1
 
 EOF
 
+#my $iostat_out = `iostat -eEn`;
 my $iostat_out = <<'EOF';
 
 c14t0d6         Soft Errors: 1 Hard Errors: 0 Transport Errors: 0
@@ -86,21 +87,27 @@ EOF
 my @lines = split(/\n/,$powermt_out);
 my @iostat_lines = split(/\n/, $iostat_out);
 
-my $DEVICES = {};
-
-my $id = 0;
-my $current_device = 0;
-
 my $VOLUMES = {};
+my $vid = 0;
+my $current_volume = 0;
 
 foreach my $line (@iostat_lines) {
   if ($line =~ /^(c\d+t\d+d\d+)\s+Soft.*/) {
-             
+    $vid++;
+    $current_volume = $1;
+    $VOLUMES->{$current_volume}->{'ID'} = $vid;
+  }
+  if ($line =~ /^Size: (\d+\.\d+[MKG]B)\s\<\d+\sbytes\>.*/) {
+    $VOLUMES->{$current_volume}->{'SIZE'} = $1;
   }
 }
 
+my $DEVICES = {};
+my $id = 0;
+my $current_device = 0;
+
 foreach my $line (@lines) {
-  if ($line =~ /^Pseudo name=([\w\d]+)/) {
+  if ($line =~ /^Pseudo name=emcpower(\d+)\w/) {
     $id++;
     $current_device = $1;
     $DEVICES->{$current_device}->{'ID'} = $id;
@@ -122,15 +129,16 @@ foreach my $line (@lines) {
 }
 
 
-print "DEVICE   \tLUN\tSTATE\tSUB-DEVICE   \tPORT\tMODE\tSTATE\n";
-for my $device ( sort keys %$DEVICES ) {
+print "DEVICE   \tLUN\tSTATE\tSUB-DEVICE   \tPORT\tMODE\tSTATE\tSIZE\n";
+for my $device ( sort {$a <=> $b } keys %$DEVICES ) {
   my $lun   = $DEVICES->{$device}->{'LUN'};
   my $state = $DEVICES->{$device}->{'STATE'};
   for my $sub_dev ( sort keys %{$DEVICES->{$device}->{'DEVICES'}} ) {
     my $sd_port  = $DEVICES->{$device}->{'DEVICES'}->{$sub_dev}->{'PORT'};
     my $sd_mode  = $DEVICES->{$device}->{'DEVICES'}->{$sub_dev}->{'MODE'};
     my $sd_state = $DEVICES->{$device}->{'DEVICES'}->{$sub_dev}->{'STATE'};
-    my @line = ( $device, $lun, $state, $sub_dev, $sd_port, $sd_mode, $sd_state );
+    my $sd_size  = $VOLUMES->{$sub_dev}->{'SIZE'} || "Unknown";
+    my @line = ( "emcpower" . $device, $lun, $state, $sub_dev. " ", $sd_port, $sd_mode, $sd_state, $sd_size );
     my $line = join("\t", @line) ;
     print $line . "\n";
   }

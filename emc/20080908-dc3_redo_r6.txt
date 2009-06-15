@@ -1,0 +1,41 @@
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 createrg 100 3_3_0 3_3_1 3_3_2 3_3_3 3_3_4 2_4_0 2_4_1 2_4_2 2_4_3 2_4_4 -rm no
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 100 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 101 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 102 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 103 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 104 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 105 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 106 -rg 100 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 createrg 110 3_3_5 3_3_6 3_3_7 3_3_8 3_3_9 2_4_5 2_4_6 2_4_7 2_4_8 2_4_9 -rm no
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 110 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 111 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 112 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 113 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 114 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 115 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 116 -rg 110 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 createrg 120 1_3_0 1_3_1 1_3_2 1_3_3 1_3_4 0_4_0 0_4_1 0_4_2 0_4_3 0_4_4 -rm no
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 120 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 121 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 122 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 123 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 124 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 125 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 126 -rg 120 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 createrg 130 1_3_5 1_3_6 1_3_7 1_3_8 1_3_9 1_3_10 1_3_11 0_4_5 0_4_6 0_4_7 -rm no
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 130 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 131 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 132 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 133 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 134 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 135 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 136 -rg 130 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 createrg 140 3_3_10 3_3_11 3_3_12 3_3_13 2_4_10 2_4_11 2_4_12 2_4_13 1_3_12 1_3_13 -rm no
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 140 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 141 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 142 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 143 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 144 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.114 bind r6 145 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp b -elsz 128
+./naviseccli -User emc -Password emc -Scope 0  -h 10.40.15.113 bind r6 146 -rg 140 -rc 1 -wc 1 -aa 0 -cap 1023 -sq gb -r Medium -v Low -sp a -elsz 128
+

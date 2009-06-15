@@ -1,0 +1,48 @@
+#! /usr/bin/bash -x
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r6 426 -rg 150 -rc 1 -wc 1 -aa 0 -cap 180226 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r6 427 -rg 160 -rc 1 -wc 1 -aa 0 -cap 180226 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r6 428 -rg 170 -rc 1 -wc 1 -aa 0 -cap 180226 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 30 0_5_0 1_4_0 0_5_1 1_4_1 0_5_2 1_4_2 0_5_3 1_4_3 0_5_4 1_4_4 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 306 -rg 30 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 307 -rg 30 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 31 0_5_5 1_4_5 0_5_6 1_4_6 0_5_7 1_4_7 0_5_8 1_4_8 0_5_9 1_4_9 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 308 -rg 31 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 309 -rg 31 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 32 0_5_10 1_4_10 0_5_11 1_4_11 0_5_12 1_4_12 0_5_13 1_4_13 0_5_14 1_4_14 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 310 -rg 32 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 311 -rg 32 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+echo "."
+echo "Wait for the previous 10 LUNs to finish Binding ..."
+sleep 10
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 33 2_5_0 1_5_0 2_5_1 1_5_1 2_5_2 1_5_2 2_5_3 1_5_3 2_5_4 1_5_4 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 312 -rg 33 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 313 -rg 33 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 34 2_5_5 1_5_5 2_5_6 1_5_6 2_5_7 1_5_7 2_5_8 1_5_8 2_5_9 1_5_9 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 314 -rg 34 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 315 -rg 34 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 35 2_5_10 1_5_10 2_5_11 1_5_11 2_5_12 1_5_12 2_5_13 1_5_13 2_5_14 1_5_14 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 316 -rg 35 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 317 -rg 35 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 36 1_6_0 3_5_0 1_6_1 3_5_1 1_6_2 3_5_2 1_6_3 3_5_3 1_6_4 3_5_4 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 318 -rg 36 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 319 -rg 36 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 37 1_6_5 3_5_5 1_6_6 3_5_6 1_6_7 3_5_7 1_6_8 3_5_8 1_6_9 3_5_9 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 320 -rg 37 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 321 -rg 37 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+echo "."
+echo "Wait for the previous 10 LUNs to finish Binding ..."
+sleep 10
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 38 1_6_10 3_5_10 1_6_11 3_5_11 1_6_12 3_5_12 1_6_13 3_5_13 1_6_14 3_5_14 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 322 -rg 38 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 323 -rg 38 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 39 3_6_0 2_6_0 3_6_1 2_6_1 3_6_2 2_6_2 3_6_3 2_6_3 3_6_4 2_6_4 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 324 -rg 39 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 325 -rg 39 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 40 3_6_5 2_6_5 3_6_6 2_6_6 3_6_7 2_6_7 3_6_8 2_6_8 3_6_9 2_6_9 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 326 -rg 40 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 327 -rg 40 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc createrg 41 3_6_10 2_6_10 3_6_11 2_6_11 3_6_12 2_6_12 3_6_13 2_6_13 3_6_14 2_6_14 -rm no
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.113 -scope 0 -user emc -password emc bind r1_0 328 -rg 41 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp a -elsz 128
+/opt/Navisphere/bin/naviseccli -Address 10.40.7.114 -scope 0 -user emc -password emc bind r1_0 329 -rg 41 -rc 1 -wc 1 -aa 0 -cap 938905 -sq mb -r Medium -v Medium -sp b -elsz 128
+
+
